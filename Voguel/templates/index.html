@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Método de Vogel</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        main {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            padding: 25px;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+        h3 {
+            font-size: 1.2rem;
+            border-bottom: 1px solid #eee;
+        }
+        section { margin-bottom: 20px; }
+        .control-group { display: flex; gap: 15px; align-items: center; margin-bottom: 20px; }
+        .control-group label { font-weight: 600; }
+        input[type="number"] { width: 70px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; }
+        button {
+            background-color: #3498db; color: white; border: none; padding: 10px 18px;
+            font-size: 1rem; font-weight: 600; border-radius: 5px; cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        button:hover { background-color: #2980b9; }
+        button#resolver-btn { background-color: #2ecc71; }
+        button#resolver-btn:hover { background-color: #27ae60; }
+        button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        #matriz-grid { display: grid; gap: 5px; margin-top: 20px; justify-content: start; }
+        #matriz-grid input { width: 50px; padding: 5px; text-align: center; }
+        .grid-header { font-weight: 700; text-align: center; padding: 5px; color: #555; }
+        .grid-label { font-weight: 700; text-align: right; padding: 5px 10px 5px 5px; color: #555; }
+        
+        /* --- Contenedores de Resultados --- */
+        #resultados-graficos {
+            margin-bottom: 20px;
+        }
+        #output-log {
+            background-color: #ecf0f1; border: 1px solid #bdc3c7; border-radius: 5px;
+            padding: 15px; min-height: 100px; max-height: 200px; overflow-y: scroll;
+            font-family: "Courier New", Courier, monospace; font-size: 0.9rem;
+            white-space: pre-wrap; line-height: 1.5;
+        }
+        
+        /* --- NUEVO CSS para las tablas de pasos --- */
+        .step-table {
+            border-collapse: collapse;
+            margin-top: 10px;
+            margin-bottom: 25px;
+            font-size: 0.9rem;
+            width: auto;
+        }
+        .step-table th, .step-table td {
+            border: 1px solid #ddd;
+            padding: 6px 8px;
+            text-align: center;
+            min-width: 40px;
+        }
+        .step-table th {
+            background-color: #f2f2f2;
+            font-weight: 600;
+        }
+        .label-cell {
+            background-color: #f2f2f2;
+            font-weight: 600;
+            text-align: right;
+            padding-right: 10px;
+        }
+        .penalty-cell {
+            background-color: #fcf8e3;
+            color: #8a6d3b;
+            font-style: italic;
+        }
+        .chosen-penalty {
+            background-color: #f0ad4e;
+            color: white;
+            font-weight: bold;
+        }
+        .chosen-cell {
+            background-color: #5cb85c;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        .satisfied {
+            background-color: #f5f5f5;
+            color: #aaa;
+            text-decoration: line-through;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <h1>Método de Vogel</h1>
+
+        <section id="setup-section">
+            <h2>1. Configuración</h2>
+            <div class="control-group">
+                <label for="filas-input">Filas (Fuentes):</label>
+                <input type="number" id="filas-input" value="3" min="2" max="10">
+                <label for="columnas-input">Columnas (Destinos):</label>
+                <input type="number" id="columnas-input" value="4" min="2" max="10">
+                <button id="crear-tabla-btn">Crear Tabla</button>
+            </div>
+        </section>
+
+        <section id="matriz-section" style="display: none;">
+            <h2>2. Costos, Oferta y Demanda</h2>
+            <div id="matriz-grid"></div>
+            <div class="control-group" style="margin-top: 20px;">
+                <button id="llenar-auto-btn">Llenar Auto (Test)</button>
+                <button id="resolver-btn">Resolver (Vogel)</button>
+            </div>
+        </section>
+
+        <section id="resultados-section" style="display: none;">
+            <h2>3. Resultados (Paso a Paso)</h2>
+            <div id="resultados-graficos">
+                </div>
+            <h3>Log de Texto</h3>
+            <div id="output-log">
+                </div>
+        </section>
+    </main>
+
+    <script>
+        // --- Variables Globales de la Interfaz ---
+        let filas = 0;
+        let cols = 0;
+        let costEntries = [];
+        let ofertaEntries = [];
+        let demandaEntries = [];
+
+        // --- Elementos del DOM ---
+        const filasInput = document.getElementById('filas-input');
+        const colsInput = document.getElementById('columnas-input');
+        const crearTablaBtn = document.getElementById('crear-tabla-btn');
+        const matrizSection = document.getElementById('matriz-section');
+        const matrizGrid = document.getElementById('matriz-grid');
+        const llenarAutoBtn = document.getElementById('llenar-auto-btn');
+        const resolverBtn = document.getElementById('resolver-btn');
+        const resultadosSection = document.getElementById('resultados-section');
+        
+        // CAMBIO: Contenedores de resultados separados
+        const stepContainer = document.getElementById('resultados-graficos');
+        const outputLog = document.getElementById('output-log');
+
+        // --- Event Listeners ---
+        crearTablaBtn.addEventListener('click', crearTabla);
+        llenarAutoBtn.addEventListener('click', llenarAuto);
+        resolverBtn.addEventListener('click', resolverVogel);
+
+        /**
+         * 1. CREA LA CUADRÍCULA DE ENTRADA (Sin cambios)
+         */
+        function crearTabla() {
+            try {
+                filas = parseInt(filasInput.value);
+                cols = parseInt(colsInput.value);
+                if (isNaN(filas) || isNaN(cols) || filas < 1 || filas > 5 || cols < 1 || cols > 5) {
+                    throw new Error("Valores inválidos");
+                }
+            } catch (e) {
+                alert("Por favor, ingrese números entre 1 y 5 para filas y columnas.");
+                return;
+            }
+
+            matrizGrid.innerHTML = '';
+            costEntries = [];
+            ofertaEntries = [];
+            demandaEntries = [];
+            matrizGrid.style.gridTemplateColumns = `auto repeat(${cols}, 1fr) auto`;
+            
+            matrizGrid.appendChild(createGridElement('div', 'grid-header'));
+            for (let j = 0; j < cols; j++) {
+                matrizGrid.appendChild(createGridElement('div', 'grid-header', `C${j+1}`));
+            }
+            matrizGrid.appendChild(createGridElement('div', 'grid-header', 'Oferta'));
+
+            for (let i = 0; i < filas; i++) {
+                costEntries.push([]);
+                matrizGrid.appendChild(createGridElement('div', 'grid-label', `F${i+1}`));
+                for (let j = 0; j < cols; j++) {
+                    const entry = createGridElement('input', '', '', {type: 'number', min: '0'});
+                    matrizGrid.appendChild(entry);
+                    costEntries[i].push(entry);
+                }
+                const ofertaEntry = createGridElement('input', '', '', {type: 'number', min: '0'});
+                matrizGrid.appendChild(ofertaEntry);
+                ofertaEntries.push(ofertaEntry);
+            }
+
+            matrizGrid.appendChild(createGridElement('div', 'grid-label', 'Demanda'));
+            for (let j = 0; j < cols; j++) {
+                const demandaEntry = createGridElement('input', '', '', {type: 'number', min: '0'});
+                matrizGrid.appendChild(demandaEntry);
+                demandaEntries.push(demandaEntry);
+            }
+            matrizSection.style.display = 'block';
+            resultadosSection.style.display = 'none';
+            stepContainer.innerHTML = '';
+            outputLog.innerHTML = '';
+        }
+
+        function createGridElement(tag, className = '', text = '', attrs = {}) {
+            const el = document.createElement(tag);
+            if (className) el.className = className;
+            if (text) el.textContent = text;
+            for (const key in attrs) {
+                el.setAttribute(key, attrs[key]);
+            }
+            return el;
+        }
+
+        /**
+         * 2. LLENA LA TABLA CON DATOS ALEATORIOS (Sin cambios)
+         */
+        function llenarAuto() {
+            costEntries.forEach(fila => fila.forEach(entry => entry.value = Math.floor(Math.random() * 100) + 1));
+            ofertaEntries.forEach(entry => entry.value = Math.floor(Math.random() * 200) + 50);
+            demandaEntries.forEach(entry => entry.value = Math.floor(Math.random() * 200) + 50);
+        }
+
+        /**
+         * Pone el log de texto en su contenedor
+         */
+        function logOutput(message) {
+            outputLog.innerHTML = message;
+            outputLog.scrollTop = outputLog.scrollHeight;
+        }
+
+        /**
+         * 3. FUNCIÓN DE RESOLUCIÓN (¡Muy modificada!)
+         */
+        async function resolverVogel() {
+            resultadosSection.style.display = 'block';
+            stepContainer.innerHTML = '<h3>Generando pasos...</h3>'; // Limpia y avisa
+            outputLog.innerHTML = "Procesando en el servidor Python...";
+            resolverBtn.disabled = true;
+
+            let costos, oferta, demanda;
+            try {
+                costos = costEntries.map((fila, i) => 
+                    fila.map((entry, j) => {
+                        const val = parseInt(entry.value);
+                        if (isNaN(val)) throw new Error(`Costo inválido en F${i+1}, C${j+1}`);
+                        return val;
+                    })
+                );
+                oferta = ofertaEntries.map((entry, i) => {
+                    const val = parseInt(entry.value);
+                    if (isNaN(val)) throw new Error(`Oferta inválida en F${i+1}`);
+                    return val;
+                });
+                demanda = demandaEntries.map((entry, j) => {
+                    const val = parseInt(entry.value);
+                    if (isNaN(val)) throw new Error(`Demanda inválida en C${j+1}`);
+                    return val;
+                });
+            } catch (error) {
+                alert(error.message);
+                logOutput(`Error en los datos: ${error.message}`);
+                stepContainer.innerHTML = '';
+                resolverBtn.disabled = false;
+                return;
+            }
+
+            const payload = { costos: costos, oferta: oferta, demanda: demanda };
+
+            try {
+                const response = await fetch('/solve', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `Error del servidor: ${response.statusText}`);
+                }
+
+                const result = await response.json(); // result contiene {steps, log, ...}
+                
+                // --- ¡AQUÍ ESTÁ LA NUEVA LÓGICA DE RENDERIZADO! ---
+                stepContainer.innerHTML = ''; // Limpia el "Generando..."
+                if (result.steps && result.steps.length > 0) {
+                    result.steps.forEach(step => {
+                        renderStep(step, result.ficticia_fila, result.ficticia_col);
+                    });
+                } else {
+                    stepContainer.innerHTML = '<h3>No se generaron pasos (posiblemente ya estaba resuelto).</h3>';
+                }
+                
+                logOutput(result.log.join('\n')); // Pone el log de texto final
+
+            } catch (error) {
+                logOutput(`--- ERROR DE COMUNICACIÓN CON EL SERVIDOR ---\n${error.message}`);
+                stepContainer.innerHTML = `<p style="color: red;">${error.message}</p>`;
+            } finally {
+                resolverBtn.disabled = false;
+            }
+        }
+
+        /**
+         * 4. ¡NUEVA FUNCIÓN! Renderiza una tabla para un solo paso.
+         */
+        function renderStep(step, ficticiaFila, ficticiaCol) {
+            const numFilas = step.matrix.length - 1;
+            const numCols = step.matrix[0].length - 1;
+
+            const [tipoPen, idxPen, valPen] = step.chosen_penalty;
+            const [filaAsig, colAsig] = step.chosen_cell;
+
+            const stepWrapper = document.createElement('div');
+            stepWrapper.className = 'step-container';
+
+            const title = document.createElement('h3');
+            title.innerHTML = `Paso ${step.step}: Asignar ${step.assigned_amount} a 
+                Fila ${filaAsig+1} / Col ${colAsig+1}`;
+            stepWrapper.appendChild(title);
+
+            const table = document.createElement('table');
+            table.className = 'step-table';
+            const thead = table.createTHead();
+            const tbody = table.createTBody();
+
+            // --- Fila de Encabezado (Columnas) ---
+            const headerRow = thead.insertRow();
+            headerRow.insertCell().className = 'label-cell'; // Esquina
+            for (let j = 0; j < numCols; j++) {
+                const label = (j === ficticiaCol) ? 'Ficticia' : `C${j+1}`;
+                headerRow.insertCell().innerHTML = `<b>${label}</b>`;
+            }
+            headerRow.insertCell().innerHTML = '<b>Oferta</b>';
+            headerRow.insertCell().innerHTML = '<b>Penalización</b>';
+
+            // --- Filas de Datos (Costos y Oferta) ---
+            for (let i = 0; i < numFilas; i++) {
+                const row = tbody.insertRow();
+                const isFilaSatisfied = step.matrix[i][numCols] === 0;
+                
+                // Encabezado de Fila
+                const label = (i === ficticiaFila) ? 'Ficticia' : `F${i+1}`;
+                row.insertCell().innerHTML = `<b>${label}</b>`;
+                row.cells[0].className = 'label-cell';
+                
+                // Celdas de Costos
+                for (let j = 0; j < numCols; j++) {
+                    const cell = row.insertCell();
+                    cell.textContent = step.matrix[i][j];
+                    
+                    if (i === filaAsig && j === colAsig) {
+                        cell.className = 'chosen-cell';
+                    }
+                    
+                    const isColSatisfied = step.matrix[numFilas][j] === 0;
+                    if (isFilaSatisfied || isColSatisfied) {
+                        cell.classList.add('satisfied');
+                    }
+                }
+                
+                // Celda de Oferta
+                const ofertaCell = row.insertCell();
+                ofertaCell.textContent = step.matrix[i][numCols];
+                if (isFilaSatisfied) ofertaCell.classList.add('satisfied');
+
+                // Celda de Penalización de Fila
+                const penFilaCell = row.insertCell();
+                penFilaCell.className = 'penalty-cell';
+                penFilaCell.textContent = step.row_penalties[i] === -1 ? '-' : step.row_penalties[i];
+                if (tipoPen === 'fila' && idxPen === i) {
+                    penFilaCell.classList.add('chosen-penalty');
+                }
+            }
+            
+            // --- Fila de Demanda ---
+            const demandaRow = tbody.insertRow();
+            demandaRow.insertCell().innerHTML = '<b>Demanda</b>';
+            demandaRow.cells[0].className = 'label-cell';
+            for (let j = 0; j < numCols; j++) {
+                const cell = demandaRow.insertCell();
+                cell.textContent = step.matrix[numFilas][j];
+                if (step.matrix[numFilas][j] === 0) {
+                    cell.classList.add('satisfied');
+                }
+            }
+            demandaRow.insertCell().className = 'label-cell'; // Vacía (bajo Oferta)
+            demandaRow.insertCell().className = 'label-cell'; // Vacía (bajo Pen. Fila)
+            
+            // --- Fila de Penalización de Columna ---
+            const penColRow = tbody.insertRow();
+            penColRow.insertCell().innerHTML = '<b>Penalización</b>';
+            penColRow.cells[0].className = 'label-cell';
+            for (let j = 0; j < numCols; j++) {
+                const cell = penColRow.insertCell();
+                cell.className = 'penalty-cell';
+                cell.textContent = step.col_penalties[j] === -1 ? '-' : step.col_penalties[j];
+                if (tipoPen === 'columna' && idxPen === j) {
+                    cell.classList.add('chosen-penalty');
+                }
+            }
+            penColRow.insertCell().className = 'label-cell'; // Vacía
+            penColRow.insertCell().className = 'label-cell'; // Vacía
+            
+            stepWrapper.appendChild(table);
+            stepContainer.appendChild(stepWrapper);
+        }
+    </script>
+</body>
+</html>
