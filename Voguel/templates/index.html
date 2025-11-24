@@ -253,9 +253,9 @@
             try {
                 filas = parseInt(filasInput.value);
                 cols = parseInt(colsInput.value);
-                if (isNaN(filas) || isNaN(cols) || filas < 1 || filas > 5 || cols < 1 || cols > 5) throw new Error();
+                if (isNaN(filas) || isNaN(cols) || filas < 2 || filas > 10 || cols < 2 || cols > 10) throw new Error();
             } catch {
-                alert("Ingrese números entre 1 y 5."); return;
+                alert("Ingrese números entre 2 y 10."); return;
             }
 
             matrizGrid.innerHTML = '';
