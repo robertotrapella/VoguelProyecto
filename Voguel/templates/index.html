@@ -212,11 +212,11 @@
             <div class="control-group">
                 <div class="control-item">
                     <label>Filas:</label>
-                    <input type="number" id="filas-input" value="3" min="1" max="5">
+                    <input type="number" id="filas-input" value="3" min="2" max="10">
                 </div>
                 <div class="control-item">
                     <label>Cols:</label>
-                    <input type="number" id="columnas-input" value="4" min="1" max="5">
+                    <input type="number" id="columnas-input" value="4" min="2" max="10">
                 </div>
                 <button id="crear-tabla-btn">Generar Tabla</button>
             </div>
@@ -270,9 +270,9 @@
             try {
                 filas = parseInt(filasInput.value);
                 cols = parseInt(colsInput.value);
-                if (isNaN(filas) || isNaN(cols) || filas < 1 || filas > 5 || cols < 1 || cols > 5) throw new Error();
+                if (isNaN(filas) || isNaN(cols) || filas < 2 || filas > 10 || cols < 2 || cols > 10) throw new Error();
             } catch {
-                alert("Ingrese números entre 1 y 5."); return;
+                alert("Ingrese números entre 2 y 10."); return;
             }
 
             matrizGrid.innerHTML = '';
