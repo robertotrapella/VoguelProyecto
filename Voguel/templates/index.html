@@ -2,59 +2,63 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Método de Vogel (Gráfico)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Método de Vogel (Móvil)</title>
     <style>
-        /* --- ESTILOS GENERALES (Estética Suave) --- */
+        /* --- ESTILOS GENERALES --- */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: #f8f9fa;
             color: #333;
-            padding: 20px;
-            max-width: 1000px;
-            margin: 0 auto;
+            padding: 15px; /* Menos padding en general */
+            margin: 0;
         }
         main {
             background-color: #ffffff;
-            border-radius: 12px; /* Bordes redondeados del contenedor principal */
+            border-radius: 12px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-            padding: 30px;
+            padding: 20px;
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            box-sizing: border-box; /* Para que el padding no aumente el ancho */
         }
         h1, h2, h3 {
             color: #2c3e50;
             border-bottom: 2px solid #f0f0f0;
             padding-bottom: 10px;
-            margin-top: 30px;
+            margin-top: 20px;
+            word-wrap: break-word; /* Evita que textos largos rompan */
         }
-        h1 { margin-top: 0; }
+        h1 { font-size: 1.5rem; margin-top: 0; }
 
-        /* --- CONTROLES --- */
+        /* --- CONTROLES (ADAPTABLES) --- */
         .control-group {
             display: flex;
-            gap: 15px;
+            gap: 10px;
             align-items: center;
-            flex-wrap: wrap;
+            flex-wrap: wrap; /* Permite que los elementos bajen si no caben */
             margin-bottom: 20px;
             background: #f1f3f5;
             padding: 15px;
             border-radius: 10px;
+            justify-content: center;
         }
-        .control-group label { font-weight: 600; color: #555; }
         
-        /* Inputs redondeados y suaves */
+        .control-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
         input[type="number"] {
-            width: 60px;
-            padding: 8px 12px;
+            width: 50px;
+            padding: 8px;
             border: 1px solid #ced4da;
-            border-radius: 20px; /* Bordes muy redondeados (píldora) */
+            border-radius: 15px;
             text-align: center;
             font-size: 1rem;
             outline: none;
-            transition: border-color 0.2s;
-        }
-        input[type="number"]:focus {
-            border-color: #3498db;
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15);
         }
 
         button {
@@ -62,28 +66,36 @@
             color: white;
             border: none;
             padding: 10px 20px;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             font-weight: 600;
-            border-radius: 20px; /* Botones redondeados */
+            border-radius: 20px;
             cursor: pointer;
-            transition: transform 0.1s, background-color 0.2s;
+            white-space: nowrap; /* Evita que el texto del botón se parta */
+            flex-grow: 1; /* En móvil, los botones ocupan el ancho disponible */
+            max-width: 200px;
         }
-        button:hover { background-color: #2980b9; transform: translateY(-1px); }
-        button:disabled { background-color: #bdc3c7; cursor: not-allowed; transform: none; }
+        button:hover { background-color: #2980b9; }
+        button:disabled { background-color: #bdc3c7; }
         button#resolver-btn { background-color: #2ecc71; }
-        button#resolver-btn:hover { background-color: #27ae60; }
 
-        /* --- 1. MATRIZ DE INPUTS --- */
+        /* --- 1. MATRIZ DE INPUTS (SCROLLABLE) --- */
+        /* Contenedor para permitir scroll horizontal en la grid de inputs */
+        .grid-scroll-wrapper {
+            width: 100%;
+            overflow-x: auto; /* Scroll si se desborda */
+            -webkit-overflow-scrolling: touch; /* Scroll suave en iOS */
+            border: 1px solid #eee;
+            border-radius: 10px;
+            padding: 10px;
+            box-sizing: border-box;
+            background: #fafafa;
+        }
+
         #matriz-grid {
             display: grid;
-            gap: 10px; /* Espacio entre las cajitas */
-            margin-top: 20px;
-            justify-content: start;
-            padding: 20px;
-            border: 1px dashed #ccc; /* Línea guía exterior sutil */
-            border-radius: 10px;
-            background-color: #fafafa;
-            overflow-x: auto;
+            gap: 8px;
+            /* El ancho se define por el contenido, permitiendo scroll */
+            min-width: min-content; 
         }
         
         .grid-header, .grid-label {
@@ -92,105 +104,103 @@
             justify-content: center;
             font-weight: 700;
             color: #7f8c8d;
-            background-color: #eec; /* Un colorcito suave para las etiquetas */
+            background-color: #eec;
             border-radius: 8px;
             padding: 5px;
-            min-width: 40px;
+            font-size: 0.9rem;
         }
-        .grid-header { background-color: #e8f6f3; color: #16a085; } /* Color diferente para columnas */
-        .grid-label { background-color: #fdf2e9; color: #d35400; } /* Color diferente para filas */
+        .grid-header { background-color: #e8f6f3; color: #16a085; }
+        .grid-label { background-color: #fdf2e9; color: #d35400; }
 
-        /* --- 2. TABLAS DE RESULTADOS (LAS LÍNEAS) --- */
+        /* Inputs dentro de la grid */
+        #matriz-grid input {
+            width: 60px; /* Ancho fijo para que no se aplasten */
+        }
+
+        /* --- 2. TABLAS DE RESULTADOS (SCROLLABLE) --- */
         .step-container {
-            margin-bottom: 50px;
+            margin-bottom: 40px;
             background: #fff;
-            padding: 10px;
+            border-bottom: 1px dashed #ccc;
+            padding-bottom: 20px;
+        }
+
+        /* Wrapper para scroll horizontal en tablas de resultados */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-top: 10px;
         }
         
         .step-table {
-            border-collapse: collapse; /* Une las líneas */
+            border-collapse: collapse;
             width: 100%;
-            margin-top: 15px;
-            font-size: 0.95rem;
+            min-width: 400px; /* Fuerza scroll si la pantalla es menor a 400px */
+            font-size: 0.9rem;
         }
 
-        /* LAS LÍNEAS QUE PIDIÓ: Separadores grises sutiles */
+        /* LÍNEAS Y CELDAS (Estética anterior mantenida) */
         .step-table th, .step-table td {
-            border: 1px solid #d1d1d1; /* Líneas visibles pero no agresivas */
-            padding: 12px;
+            border: 1px solid #d1d1d1;
+            padding: 8px;
             text-align: center;
-            vertical-align: middle;
+            white-space: nowrap; /* Evita que los números se rompan en dos líneas */
         }
 
         .step-table th {
             background-color: #f8f9fa;
             font-weight: 700;
             color: #555;
-            border-bottom: 2px solid #ccc; /* Línea un poco más gruesa bajo el encabezado */
+            border-bottom: 2px solid #ccc;
         }
 
-        /* --- ESTÉTICA DE CELDAS (Lo "redondo" dentro de las líneas) --- */
-        
-        /* Contenedor interno para dar el efecto redondeado al contenido */
+        /* Píldoras redondeadas */
         .cell-content {
             display: inline-block;
-            padding: 6px 12px;
-            border-radius: 15px; /* Aquí está el borde circular que querías */
-            min-width: 30px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            min-width: 20px;
         }
 
-        /* Penalización (Número pequeño) */
-        .penalty-val {
-            font-style: italic;
-            color: #7f8c8d;
-        }
+        .penalty-val { font-style: italic; color: #7f8c8d; font-size: 0.85rem; }
 
-        /* --- Colores de Acción --- */
-        
-        /* Penalización Elegida (Burbuja Naranja) */
+        /* Colores */
         .chosen-penalty .cell-content {
-            background-color: #ffe0b2;
-            color: #e65100;
-            font-weight: bold;
-            box-shadow: 0 2px 5px rgba(230, 81, 0, 0.2);
+            background-color: #ffe0b2; color: #e65100; font-weight: bold;
+            box-shadow: 0 2px 4px rgba(230, 81, 0, 0.2);
         }
-
-        /* Celda Asignada (Burbuja Verde) */
         .chosen-cell .cell-content {
-            background-color: #c8e6c9;
-            color: #2e7d32;
-            font-weight: bold;
-            box-shadow: 0 2px 5px rgba(46, 125, 50, 0.2);
-            transform: scale(1.1); /* Un poquito más grande */
+            background-color: #c8e6c9; color: #2e7d32; font-weight: bold;
+            transform: scale(1.05);
+            box-shadow: 0 2px 4px rgba(46, 125, 50, 0.2);
         }
-
-        /* Filas/Cols Tachadas */
-        .satisfied {
-            background-color: #f9f9f9; /* Fondo muy suave para lo tachado */
-        }
-        .satisfied .cell-content {
-            color: #bbb;
-            text-decoration: line-through;
-        }
-
-        /* Etiquetas laterales en la tabla */
-        .label-cell {
-            background-color: #f4f6f7;
-            font-weight: bold;
-            color: #333;
-            border-right: 2px solid #ddd; /* Línea separadora vertical */
-        }
+        .satisfied { background-color: #f9f9f9; }
+        .satisfied .cell-content { color: #ccc; text-decoration: line-through; }
+        .label-cell { background-color: #f4f6f7; font-weight: bold; color: #333; border-right: 2px solid #ddd; }
 
         #output-log {
-            background-color: #2d3436;
-            color: #dfe6e9;
-            padding: 20px;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            height: 200px;
-            overflow-y: scroll;
-            line-height: 1.5;
-            white-space: pre-wrap;
+            background-color: #2d3436; color: #dfe6e9; padding: 15px;
+            border-radius: 8px; font-family: 'Courier New', monospace;
+            height: 150px; overflow-y: scroll; font-size: 0.85rem;
+            white-space: pre-wrap; word-break: break-all;
+        }
+
+        /* --- MEDIA QUERIES PARA TELÉFONOS --- */
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            main { padding: 15px; }
+            
+            /* Inputs de configuración más grandes para dedos */
+            .control-item input { width: 60px; padding: 10px; }
+            
+            /* Botones apilados y anchos */
+            .control-group { flex-direction: column; align-items: stretch; }
+            button { width: 100%; max-width: none; margin-bottom: 5px; }
+            
+            /* Títulos más pequeños */
+            h1 { font-size: 1.3rem; text-align: center; }
+            h4 { font-size: 1rem; }
         }
     </style>
 </head>
@@ -200,29 +210,36 @@
 
         <section id="setup-section">
             <div class="control-group">
-                <label>Filas:</label>
-                <input type="number" id="filas-input" value="3" min="2" max="10">
-                <label>Columnas:</label>
-                <input type="number" id="columnas-input" value="4" min="2" max="10">
+                <div class="control-item">
+                    <label>Filas:</label>
+                    <input type="number" id="filas-input" value="3" min="1" max="5">
+                </div>
+                <div class="control-item">
+                    <label>Cols:</label>
+                    <input type="number" id="columnas-input" value="4" min="1" max="5">
+                </div>
                 <button id="crear-tabla-btn">Generar Tabla</button>
             </div>
         </section>
 
         <section id="matriz-section" style="display: none;">
-            <h3>Ingrese los Costos</h3>
-            <div id="matriz-grid"></div>
+            <h3>Costos, Oferta y Demanda</h3>
+            
+            <div class="grid-scroll-wrapper">
+                <div id="matriz-grid"></div>
+            </div>
             
             <div class="control-group" style="margin-top: 20px; background: transparent;">
-                <button id="llenar-auto-btn" style="background-color: #95a5a6;">Llenar Aleatorio</button>
-                <button id="resolver-btn">Resolver Paso a Paso</button>
+                <button id="llenar-auto-btn" style="background-color: #95a5a6;">Aleatorio</button>
+                <button id="resolver-btn">Resolver</button>
             </div>
         </section>
 
         <section id="resultados-section" style="display: none;">
-            <h3>Visualización del Algoritmo</h3>
+            <h3>Paso a Paso</h3>
             <div id="resultados-graficos"></div>
             
-            <h3>Resumen de Operaciones</h3>
+            <h3>Log</h3>
             <div id="output-log"></div>
         </section>
     </main>
@@ -253,9 +270,9 @@
             try {
                 filas = parseInt(filasInput.value);
                 cols = parseInt(colsInput.value);
-                if (isNaN(filas) || isNaN(cols) || filas < 2 || filas > 10 || cols < 2 || cols > 10) throw new Error();
+                if (isNaN(filas) || isNaN(cols) || filas < 1 || filas > 5 || cols < 1 || cols > 5) throw new Error();
             } catch {
-                alert("Ingrese números entre 2 y 10."); return;
+                alert("Ingrese números entre 1 y 5."); return;
             }
 
             matrizGrid.innerHTML = '';
@@ -286,7 +303,7 @@
             }
 
             // Demanda
-            matrizGrid.appendChild(createDiv('grid-label', 'Demanda'));
+            matrizGrid.appendChild(createDiv('grid-label', 'Dem.'));
             for (let j = 0; j < cols; j++) {
                 const demInp = document.createElement('input');
                 demInp.type = 'number'; demInp.min = '0';
@@ -348,6 +365,10 @@
             div.className = 'step-container';
             div.innerHTML = `<h4>Paso ${step.step}: Asignar <b>${step.assigned_amount}</b> a (${filaAsig+1}, ${colAsig+1})</h4>`;
 
+            // WRAPPER RESPONSIVE PARA LA TABLA
+            const tableWrapper = document.createElement('div');
+            tableWrapper.className = 'table-responsive';
+
             const table = document.createElement('table');
             table.className = 'step-table';
 
@@ -365,27 +386,22 @@
             // Body
             for(let i=0; i<numFilas; i++) {
                 tr = table.insertRow();
-                // Label Fila
                 let tdLabel = tr.insertCell();
                 tdLabel.className = 'label-cell';
                 tdLabel.innerText = (i === fFila) ? 'Fict' : `F${i+1}`;
 
-                // Costos
                 for(let j=0; j<numCols; j++) {
                     let td = tr.insertCell();
                     let content = `<span class="cell-content">${step.matrix[i][j]}</span>`;
                     td.innerHTML = content;
-
                     if(i===filaAsig && j===colAsig) td.className = 'chosen-cell';
                     if(step.matrix[i][numCols]===0 || step.matrix[numFilas][j]===0) td.classList.add('satisfied');
                 }
 
-                // Oferta
                 let tdOferta = tr.insertCell();
                 tdOferta.innerHTML = `<span class="cell-content">${step.matrix[i][numCols]}</span>`;
                 if(step.matrix[i][numCols]===0) tdOferta.classList.add('satisfied');
 
-                // Penalización Fila
                 let tdPen = tr.insertCell();
                 let val = step.row_penalties[i]===-1 ? '-' : step.row_penalties[i];
                 tdPen.innerHTML = `<span class="cell-content penalty-val">${val}</span>`;
@@ -413,7 +429,8 @@
             }
             tr.insertCell(); tr.insertCell();
 
-            div.appendChild(table);
+            tableWrapper.appendChild(table);
+            div.appendChild(tableWrapper);
             stepContainer.appendChild(div);
         }
     </script>
