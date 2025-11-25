@@ -3,9 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Método de Vogel (Móvil)</title>
+    <title>Método de Vogel</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}?v=3">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='logo.png') }}?v=3">
+
     <style>
-        /* --- ESTILOS GENERALES --- */
+        /* --- ESTILOS GENERALES (Estética Suave) --- */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: #f8f9fa;
@@ -44,14 +47,10 @@
             border-radius: 10px;
             justify-content: center;
         }
-        
-        .control-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
+        .control-item { display: flex; align-items: center; gap: 5px; }
 
-        input[type="number"] {
+        /* Input de configuración (Filas/Cols) */
+        input.config-input {
             width: 50px;
             padding: 8px;
             border: 1px solid #ced4da;
@@ -59,134 +58,121 @@
             text-align: center;
             font-size: 1rem;
             outline: none;
-            /* Estos estilos ayudan a quitar las flechas spinner en algunos navegadores */
-            appearance: textfield; 
-            /* 2. Soporte específico para Firefox (necesario aunque de advertencia) */
+            appearance: textfield;
             -moz-appearance: textfield;
-        }
-        /* Quitar flechas spinner en Chrome/Safari */
-        input::-webkit-outer-spin-button,
-        input::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
         }
 
         button {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            border-radius: 20px;
-            cursor: pointer;
-            white-space: nowrap;
-            flex-grow: 1;
-            max-width: 200px;
+            background-color: #3498db; color: white; border: none; padding: 10px 20px;
+            font-size: 0.9rem; font-weight: 600; border-radius: 20px; cursor: pointer;
+            white-space: nowrap; flex-grow: 1; max-width: 200px;
+            transition: transform 0.1s, background-color 0.2s;
         }
-        button:hover { background-color: #2980b9; }
-        button:disabled { background-color: #bdc3c7; }
+        button:hover { background-color: #2980b9; transform: translateY(-1px); }
+        button:disabled { background-color: #bdc3c7; cursor: not-allowed; transform: none; }
         button#resolver-btn { background-color: #2ecc71; }
+        button#resolver-btn:hover { background-color: #27ae60; }
 
-        /* --- MATRIZ (SCROLLABLE) --- */
+        /* --- MATRIZ --- */
         .grid-scroll-wrapper {
-            width: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            border: 1px solid #eee;
-            border-radius: 10px;
-            padding: 10px;
-            box-sizing: border-box;
-            background: #fafafa;
+            width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;
+            border: 1px dashed #ccc; border-radius: 10px; padding: 15px;
+            box-sizing: border-box; background: #fafafa;
         }
-
-        #matriz-grid {
-            display: grid;
-            gap: 8px;
-            min-width: min-content; 
+        #matriz-grid { display: grid; gap: 10px; min-width: min-content; }
+        
+        /* ESTILOS DE ENCABEZADOS (Burbujas suaves) */
+        .grid-header, .grid-label {
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 8px; padding: 2px; 
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         
-        .grid-header, .grid-label {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            color: #7f8c8d;
-            background-color: #eec;
-            border-radius: 8px;
-            padding: 5px;
-            font-size: 0.9rem;
-        }
         .grid-header { background-color: #e8f6f3; color: #16a085; }
         .grid-label { background-color: #fdf2e9; color: #d35400; }
+        .static-label { background-color: #eee; color: #7f8c8d; font-weight: bold; padding: 5px 10px; }
 
-        #matriz-grid input {
-            width: 60px;
+        /* Input transparente para cambiar nombre */
+        input.name-input {
+            width: 70px;
+            border: none;
+            background: transparent;
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+            padding: 5px;
+            color: inherit;
+            outline: none;
         }
-
-        /* --- RESULTADOS --- */
-        .step-container {
-            margin-bottom: 40px;
-            background: #fff;
-            border-bottom: 1px dashed #ccc;
-            padding-bottom: 20px;
-        }
-
-        .table-responsive {
-            width: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            margin-top: 10px;
+        input.name-input::placeholder { color: rgba(0,0,0,0.3); }
+        
+        /* CAMBIO AQUÍ: Eliminado el fondo blanco al hacer focus */
+        input.name-input:focus { 
+            background-color: transparent; 
+            opacity: 1; 
         }
         
-        .step-table {
-            border-collapse: collapse;
-            width: 100%;
-            min-width: 400px;
-            font-size: 0.9rem;
-        }
-
-        .step-table th, .step-table td {
-            border: 1px solid #d1d1d1;
+        /* Inputs de costos (Numéricos - Cajitas blancas) */
+        input.cost-input {
+            width: 60px;
             padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 15px;
             text-align: center;
-            white-space: nowrap;
+            font-size: 1rem;
+            outline: none;
+            background-color: #fff;
+            -moz-appearance: textfield;
         }
+        input.cost-input:focus { border-color: #3498db; box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15); }
 
-        .step-table th {
-            background-color: #f8f9fa;
-            font-weight: 700;
-            color: #555;
-            border-bottom: 2px solid #ccc;
+        /* --- RESULTADOS VISUALES --- */
+        .step-container { margin-bottom: 40px; background: #fff; padding: 10px; border-bottom: 1px dashed #ddd; }
+        .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 15px; }
+        
+        /* Tabla con líneas suaves */
+        .step-table { border-collapse: collapse; width: 100%; min-width: 400px; font-size: 0.95rem; }
+        .step-table th, .step-table td { 
+            border: 1px solid #e0e0e0;
+            padding: 12px; 
+            text-align: center; 
+            white-space: nowrap; 
         }
-
-        .cell-content {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 12px;
-            min-width: 20px;
-        }
-
-        .penalty-val { font-style: italic; color: #7f8c8d; font-size: 0.85rem; }
-
-        .chosen-penalty .cell-content {
-            background-color: #ffe0b2; color: #e65100; font-weight: bold;
-            box-shadow: 0 2px 4px rgba(230, 81, 0, 0.2);
-        }
-        .chosen-cell .cell-content {
-            background-color: #c8e6c9; color: #2e7d32; font-weight: bold;
-            transform: scale(1.05);
-            box-shadow: 0 2px 4px rgba(46, 125, 50, 0.2);
-        }
-        .satisfied { background-color: #f9f9f9; }
+        .step-table th { background-color: #f9fafb; font-weight: 700; color: #555; border-bottom: 2px solid #d1d1d1; }
+        
+        /* Celdas "Burbuja" */
+        .cell-content { display: inline-block; padding: 6px 12px; border-radius: 15px; min-width: 20px; }
+        .penalty-val { font-style: italic; color: #95a5a6; font-size: 0.85rem; }
+        
+        /* Colores de acción */
+        .chosen-penalty .cell-content { background-color: #ffe0b2; color: #e65100; font-weight: bold; box-shadow: 0 2px 5px rgba(230, 81, 0, 0.2); }
+        .chosen-cell .cell-content { background-color: #c8e6c9; color: #2e7d32; font-weight: bold; transform: scale(1.1); box-shadow: 0 2px 5px rgba(46, 125, 50, 0.2); }
+        .satisfied { background-color: #fafafa; }
         .satisfied .cell-content { color: #ccc; text-decoration: line-through; }
-        .label-cell { background-color: #f4f6f7; font-weight: bold; color: #333; border-right: 2px solid #ddd; }
+        .label-cell { background-color: #f4f6f7; font-weight: bold; color: #333; border-right: 2px solid #eee; }
 
-        #output-log {
-            background-color: #2d3436; color: #dfe6e9; padding: 15px;
-            border-radius: 8px; font-family: 'Courier New', monospace;
-            height: 150px; overflow-y: scroll; font-size: 0.85rem;
-            white-space: pre-wrap; word-break: break-all;
+        /* --- SECCIÓN DE CÁLCULO FINAL --- */
+        #calculation-section {
+            background-color: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        .equation-box {
+            font-family: 'Courier New', monospace; font-size: 1rem; color: #555;
+            margin-bottom: 20px; line-height: 1.8; word-spacing: 5px;
+        }
+        .calc-item {
+            display: inline-block; background: #fff; padding: 4px 10px;
+            border-radius: 8px; border: 1px solid #eee; margin: 3px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .total-result-box {
+            background-color: #2ecc71; color: white; font-size: 1.6rem; font-weight: 800;
+            padding: 15px 40px; border-radius: 50px; display: inline-block;
+            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4);
         }
 
         @media (max-width: 600px) {
@@ -195,7 +181,7 @@
             .control-item input { width: 60px; padding: 10px; }
             .control-group { flex-direction: column; align-items: stretch; }
             button { width: 100%; max-width: none; margin-bottom: 5px; }
-            h1 { font-size: 1.3rem; text-align: center; }
+            h1 { font-size: 1.4rem; text-align: center; }
             h4 { font-size: 1rem; }
         }
     </style>
@@ -208,23 +194,21 @@
             <div class="control-group">
                 <div class="control-item">
                     <label>Filas:</label>
-                    <input type="number" id="filas-input" value="3" min="2" max="10" inputmode="numeric" pattern="[0-9]*">
+                    <input type="number" id="filas-input" class="config-input" value="3" min="2" max="10" inputmode="numeric" pattern="[0-9]*">
                 </div>
                 <div class="control-item">
                     <label>Cols:</label>
-                    <input type="number" id="columnas-input" value="4" min="2" max="10" inputmode="numeric" pattern="[0-9]*">
+                    <input type="number" id="columnas-input" class="config-input" value="4" min="2" max="10" inputmode="numeric" pattern="[0-9]*">
                 </div>
                 <button id="crear-tabla-btn">Generar Tabla</button>
             </div>
         </section>
 
         <section id="matriz-section" style="display: none;">
-            <h3>Costos, Oferta y Demanda</h3>
-            
+            <h3>Ingrese Nombres y Costos</h3>
             <div class="grid-scroll-wrapper">
                 <div id="matriz-grid"></div>
             </div>
-            
             <div class="control-group" style="margin-top: 20px; background: transparent;">
                 <button id="llenar-auto-btn" style="background-color: #95a5a6;">Aleatorio</button>
                 <button id="resolver-btn">Resolver</button>
@@ -235,14 +219,15 @@
             <h3>Paso a Paso</h3>
             <div id="resultados-graficos"></div>
             
-            <h3>Log</h3>
-            <div id="output-log"></div>
+            <h3>Cálculo Final</h3>
+            <div id="calculation-section"></div>
         </section>
     </main>
 
     <script>
         let filas = 0, cols = 0;
         let costEntries = [], ofertaEntries = [], demandaEntries = [];
+        let rowNamesEntries = [], colNamesEntries = [];
 
         const filasInput = document.getElementById('filas-input');
         const colsInput = document.getElementById('columnas-input');
@@ -253,20 +238,28 @@
         const resolverBtn = document.getElementById('resolver-btn');
         const resultadosSection = document.getElementById('resultados-section');
         const stepContainer = document.getElementById('resultados-graficos');
-        const outputLog = document.getElementById('output-log');
+        const calcSection = document.getElementById('calculation-section');
 
         crearTablaBtn.addEventListener('click', crearTabla);
         llenarAutoBtn.addEventListener('click', llenarAuto);
         resolverBtn.addEventListener('click', resolverVogel);
 
-        // FUNCIÓN AUXILIAR PARA CREAR INPUTS NUMÉRICOS DE MÓVIL
         function createMobileInput() {
             const inp = document.createElement('input');
-            inp.type = 'number'; 
-            inp.min = '0';
-            // ESTO ACTIVA EL TECLADO NUMÉRICO EN MÓVILES
+            inp.type = 'number'; inp.min = '0';
+            inp.className = 'cost-input';
             inp.setAttribute('inputmode', 'numeric');
             inp.setAttribute('pattern', '[0-9]*');
+            return inp;
+        }
+
+        function createNameInput(placeholder) {
+            const inp = document.createElement('input');
+            inp.type = 'text';
+            inp.className = 'name-input';
+            inp.placeholder = placeholder;
+            inp.value = placeholder;
+            inp.onfocus = function() { this.select(); };
             return inp;
         }
 
@@ -274,7 +267,6 @@
             try {
                 filas = parseInt(filasInput.value);
                 cols = parseInt(colsInput.value);
-                // Validación 2 a 10
                 if (isNaN(filas) || isNaN(cols) || filas < 2 || filas > 10 || cols < 2 || cols > 10) throw new Error();
             } catch {
                 alert("Ingrese números entre 2 y 10."); return;
@@ -282,32 +274,47 @@
 
             matrizGrid.innerHTML = '';
             costEntries = []; ofertaEntries = []; demandaEntries = [];
-            
+            rowNamesEntries = []; colNamesEntries = [];
+
             matrizGrid.style.gridTemplateColumns = `auto repeat(${cols}, auto) auto`;
 
-            // Encabezados
-            matrizGrid.appendChild(createDiv('grid-header', ''));
-            for (let j = 0; j < cols; j++) matrizGrid.appendChild(createDiv('grid-header', `C${j+1}`));
-            matrizGrid.appendChild(createDiv('grid-header', 'Oferta'));
+            // --- HEADER ROW ---
+            matrizGrid.appendChild(createDiv('grid-header static-label', ''));
+            
+            for (let j = 0; j < cols; j++) {
+                const wrapper = createDiv('grid-header', '');
+                const inp = createNameInput(`C${j+1}`);
+                wrapper.appendChild(inp);
+                matrizGrid.appendChild(wrapper);
+                colNamesEntries.push(inp);
+            }
+            matrizGrid.appendChild(createDiv('grid-header static-label', 'Oferta'));
 
-            // Filas
+            // --- DATA ROWS ---
             for (let i = 0; i < filas; i++) {
                 costEntries.push([]);
-                matrizGrid.appendChild(createDiv('grid-label', `F${i+1}`));
+                
+                const wrapper = createDiv('grid-label', '');
+                const inp = createNameInput(`F${i+1}`);
+                wrapper.appendChild(inp);
+                matrizGrid.appendChild(wrapper);
+                rowNamesEntries.push(inp);
+
                 for (let j = 0; j < cols; j++) {
-                    const inp = createMobileInput(); // USAMOS LA NUEVA FUNCIÓN
+                    const inp = createMobileInput();
                     matrizGrid.appendChild(inp);
                     costEntries[i].push(inp);
                 }
-                const ofInp = createMobileInput(); // USAMOS LA NUEVA FUNCIÓN
+                
+                const ofInp = createMobileInput();
                 matrizGrid.appendChild(ofInp);
                 ofertaEntries.push(ofInp);
             }
 
-            // Demanda
-            matrizGrid.appendChild(createDiv('grid-label', 'Dem.'));
+            // --- DEMAND ROW ---
+            matrizGrid.appendChild(createDiv('grid-label static-label', 'Dem.'));
             for (let j = 0; j < cols; j++) {
-                const demInp = createMobileInput(); // USAMOS LA NUEVA FUNCIÓN
+                const demInp = createMobileInput();
                 matrizGrid.appendChild(demInp);
                 demandaEntries.push(demInp);
             }
@@ -332,10 +339,13 @@
         async function resolverVogel() {
             resultadosSection.style.display = 'block';
             stepContainer.innerHTML = '<p>Calculando...</p>';
+            calcSection.innerHTML = '';
             
             let costos = costEntries.map(r => r.map(e => parseInt(e.value)||0));
             let oferta = ofertaEntries.map(e => parseInt(e.value)||0);
             let demanda = demandaEntries.map(e => parseInt(e.value)||0);
+            let rowNames = rowNamesEntries.map(inp => inp.value.trim() || inp.placeholder);
+            let colNames = colNamesEntries.map(inp => inp.value.trim() || inp.placeholder);
 
             try {
                 const res = await fetch('/solve', {
@@ -346,49 +356,72 @@
                 const data = await res.json();
                 
                 stepContainer.innerHTML = '';
-                outputLog.innerHTML = data.log.join('\n');
 
                 if(data.steps) {
-                    data.steps.forEach(step => renderStep(step, data.ficticia_fila, data.ficticia_col));
+                    data.steps.forEach(step => renderStep(step, data.ficticia_fila, data.ficticia_col, rowNames, colNames));
                 }
+
+                renderMathResult(data.calculos, data.total_general);
+
             } catch (e) {
                 alert("Error: " + e.message);
             }
         }
 
-        function renderStep(step, fFila, fCol) {
+        function renderMathResult(calculos, total) {
+            if (!calculos || calculos.length === 0) return;
+            const equationDiv = document.createElement('div');
+            equationDiv.className = 'equation-box';
+            const parts = calculos.map(c => `<span class="calc-item">(${c.cantidad} × ${c.costo})</span>`);
+            equationDiv.innerHTML = 'Z = ' + parts.join(' + ');
+            const totalDiv = document.createElement('div');
+            totalDiv.innerHTML = `<div class="total-result-box">Total: ${total}</div>`;
+            calcSection.appendChild(equationDiv);
+            calcSection.appendChild(totalDiv);
+        }
+
+        function renderStep(step, fFila, fCol, rowNames, colNames) {
             const [tipoPen, idxPen] = step.chosen_penalty;
             const [filaAsig, colAsig] = step.chosen_cell;
             const numFilas = step.matrix.length - 1;
             const numCols = step.matrix[0].length - 1;
 
+            const getRowName = (idx) => {
+                if (idx === fFila) return 'Ficticia';
+                let nameIdx = (fFila !== -1 && idx > fFila) ? idx - 1 : idx;
+                return rowNames[nameIdx] || `F${idx+1}`;
+            };
+
+            const getColName = (idx) => {
+                if (idx === fCol) return 'Ficticia';
+                let nameIdx = (fCol !== -1 && idx > fCol) ? idx - 1 : idx;
+                return colNames[nameIdx] || `C${idx+1}`;
+            };
+
             const div = document.createElement('div');
             div.className = 'step-container';
-            div.innerHTML = `<h4>Paso ${step.step}: Asignar <b>${step.assigned_amount}</b> a (${filaAsig+1}, ${colAsig+1})</h4>`;
+            div.innerHTML = `<h4>Paso ${step.step}: Asignar <b>${step.assigned_amount}</b> a (${getRowName(filaAsig)}, ${getColName(colAsig)})</h4>`;
 
             const tableWrapper = document.createElement('div');
             tableWrapper.className = 'table-responsive';
-
             const table = document.createElement('table');
             table.className = 'step-table';
 
-            // Header
             let tr = table.insertRow();
             tr.insertCell();
             for(let j=0; j<numCols; j++) {
                 let th = document.createElement('th');
-                th.innerText = (j === fCol) ? 'Fict' : `C${j+1}`;
+                th.innerText = getColName(j);
                 tr.appendChild(th);
             }
             let thOf = document.createElement('th'); thOf.innerText = 'Oferta'; tr.appendChild(thOf);
             let thPen = document.createElement('th'); thPen.innerText = 'Penal.'; tr.appendChild(thPen);
 
-            // Body
             for(let i=0; i<numFilas; i++) {
                 tr = table.insertRow();
                 let tdLabel = tr.insertCell();
                 tdLabel.className = 'label-cell';
-                tdLabel.innerText = (i === fFila) ? 'Fict' : `F${i+1}`;
+                tdLabel.innerText = getRowName(i);
 
                 for(let j=0; j<numCols; j++) {
                     let td = tr.insertCell();
@@ -408,7 +441,6 @@
                 if(tipoPen==='fila' && idxPen===i) tdPen.className = 'chosen-penalty';
             }
 
-            // Demanda
             tr = table.insertRow();
             let tdDemLabel = tr.insertCell(); tdDemLabel.className = 'label-cell'; tdDemLabel.innerText = 'Dem.';
             for(let j=0; j<numCols; j++) {
@@ -418,7 +450,6 @@
             }
             tr.insertCell(); tr.insertCell();
 
-            // Penalización Columna
             tr = table.insertRow();
             let tdPenLabel = tr.insertCell(); tdPenLabel.className = 'label-cell'; tdPenLabel.innerText = 'Penal.';
             for(let j=0; j<numCols; j++) {

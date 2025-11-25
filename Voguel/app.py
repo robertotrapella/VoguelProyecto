@@ -1,7 +1,7 @@
+import os
 import random
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory
 
-# --- Tu lógica de Vogel envuelta en una clase ---
 class VogelSolver:
     def __init__(self, costos, oferta, demanda):
         self.matriz = costos
@@ -9,16 +9,15 @@ class VogelSolver:
         self.demanda_inicial = demanda
         
         self.steps = []
-        self.text_log = []
+        self.assignments = [] # <--- NUEVA LISTA PARA GUARDAR (CANTIDAD, COSTO)
+        self.text_log = [] # Lo mantenemos por si acaso, pero ya no es vital
         
         self.ficticia_fila_idx = -1
         self.ficticia_col_idx = -1
 
     def log_output(self, message):
-        """ Guarda en el log de texto. """
         self.text_log.append(message)
 
-    # Esta función está bien. Devuelve las listas de penalizaciones.
     def determinar_penalizacion(self):
         filas_totales = len(self.matriz) - 1
         cols_totales = len(self.matriz[0]) - 1
@@ -49,11 +48,6 @@ class VogelSolver:
         if max_p_fila == -1 and max_p_col == -1:
             return "stop", 0, 0, [], []
 
-        # Obtenemos los índices de los máximos
-        idx_p_fila = penalizaciones_fila.index(max_p_fila) if max_p_fila != -1 else -1
-        idx_p_col = penalizaciones_columna.index(max_p_col) if max_p_col != -1 else -1
-        
-        # Devolvemos toda la información
         return "continue", max_p_fila, max_p_col, penalizaciones_fila, penalizaciones_columna
 
 
@@ -91,26 +85,17 @@ class VogelSolver:
             self.matriz.insert(-1, nueva_fila)
             self.ficticia_fila_idx = len(self.matriz) - 2
 
-    # --- CAMBIO PRINCIPAL AQUÍ ---
-    # La lógica de 'solve' ahora maneja el desempate completo.
     def solve(self):
         try:
-            self.log_output("--- Iniciando Proceso de Vogel ---")
-            
             total_oferta = self.agregar_oferta()
             total_demanda = self.agregar_demanda()
             desbalance = self.calcular_desbalanceo(total_oferta, total_demanda)
             
             if desbalance != 0:
                 tipo_faltante, restante = desbalance
-                self.log_output(f"\nDesbalance: Falta {restante} de {tipo_faltante}. Agregando ficticia...")
                 self.agregar_ficticia(tipo_faltante, restante)
-            else:
-                self.log_output("\nEl problema ya estaba balanceado.")
 
-            lista_costos = []
             step_counter = 1
-            
             filas_activas = len(self.matriz) - 1
             cols_activos = len(self.matriz[0]) - 1
 
@@ -121,25 +106,16 @@ class VogelSolver:
                 if demanda_restante < 0.001 and oferta_restante < 0.001:
                     break
 
-                # 1. Obtener toda la info de penalización
                 status, max_p_fila_val, max_p_col_val, p_filas, p_cols = self.determinar_penalizacion()
 
                 if status == "stop":
-                    self.log_output("No hay más penalizaciones válidas.")
                     break
                 
-                # 2. Encontrar la penalización MÁXIMA en toda la tabla
                 max_pen_overall = max(max_p_fila_val, max_p_col_val)
-                
-                if max_pen_overall == -1:
-                    break
+                if max_pen_overall == -1: break
                     
-                self.log_output(f"\nPenalización máxima encontrada: {max_pen_overall}")
-
-                # 3. Encontrar TODOS los candidatos (filas/cols) con esta penalización
-                candidates = [] # Almacenará tuplas: (tipo, index, min_costo_en_linea)
+                candidates = [] 
                 
-                # Buscar en filas
                 for i in range(filas_activas):
                     if p_filas[i] == max_pen_overall:
                         min_costo = float('inf')
@@ -149,7 +125,6 @@ class VogelSolver:
                         if min_costo != float('inf'):
                             candidates.append(('fila', i, min_costo))
                 
-                # Buscar en columnas
                 for j in range(cols_activos):
                     if p_cols[j] == max_pen_overall:
                         min_costo = float('inf')
@@ -159,12 +134,8 @@ class VogelSolver:
                         if min_costo != float('inf'):
                             candidates.append(('columna', j, min_costo))
 
-                # 4. Manejar si no hay candidatos válidos (raro, pero posible)
-                if not candidates:
-                    self.log_output("Caso de parada: No se encontraron candidatos válidos.")
-                    break
+                if not candidates: break
                     
-                # 5. Decidir el ganador: el que tenga el costo mínimo (x[2])
                 candidates.sort(key=lambda x: x[2])
                 winner = candidates[0]
                 
@@ -172,37 +143,27 @@ class VogelSolver:
                 indice_elegido = winner[1]
                 costo_minimo_elegido = winner[2]
                 
-                if len(candidates) > 1:
-                     self.log_output(f"Empate de penalización resuelto por costo mínimo.")
-                     self.log_output(f"Candidato ganador (costo: {costo_minimo_elegido}): {tipo_elegido} {indice_elegido + 1}.")
-                
-                # 6. Lógica de Asignación (encontrar la celda exacta)
                 fila_idx, col_idx, min_costo = -1, -1, float('inf')
 
                 if tipo_elegido == "fila":
                     fila_idx = indice_elegido
-                    # Encontrar la columna con el costo mínimo en esta fila
                     for j in range(cols_activos):
                         if self.matriz[-1][j] > 0 and self.matriz[fila_idx][j] == costo_minimo_elegido:
                             col_idx = j
                             min_costo = costo_minimo_elegido
-                            break # Tomar la primera que coincida
-                else: # tipo == "columna"
+                            break 
+                else: 
                     col_idx = indice_elegido
-                    # Encontrar la fila con el costo mínimo en esta columna
                     for i in range(filas_activas):
                         if self.matriz[i][-1] > 0 and self.matriz[i][col_idx] == costo_minimo_elegido:
                             fila_idx = i
                             min_costo = costo_minimo_elegido
-                            break # Tomar la primera que coincida
+                            break 
                                 
-                if fila_idx == -1 or col_idx == -1:
-                     self.log_output(f"Caso de parada: No se pudo asignar celda para {tipo_elegido} {indice_elegido+1}.")
-                     break
+                if fila_idx == -1 or col_idx == -1: break
                 
                 cantidad = min(self.matriz[fila_idx][-1], self.matriz[-1][col_idx])
 
-                # 7. Capturar el paso ANTES de modificar la matriz
                 current_step_data = {
                     'step': step_counter,
                     'matrix': [row.copy() for row in self.matriz], 
@@ -214,33 +175,39 @@ class VogelSolver:
                 }
                 self.steps.append(current_step_data)
                 
-                # 8. Modificar la matriz
+                # GUARDAR EL CÁLCULO PARA EL FINAL
+                self.assignments.append({
+                    'cantidad': cantidad,
+                    'costo': min_costo,
+                    'total': cantidad * min_costo
+                })
+
                 self.matriz[fila_idx][-1] -= cantidad
                 self.matriz[-1][col_idx] -= cantidad
                 
-                costo_parcial = cantidad * min_costo
-                lista_costos.append(costo_parcial)
-                
-                self.log_output(f"Paso {step_counter}: Asignado {cantidad} de F{fila_idx+1} a C{col_idx+1}")
                 step_counter += 1
 
-            self.log_output("\n--- Asignación completada ---")
-            self.log_output(f"Costo Total Mínimo: {sum(lista_costos)}")
+            total_cost = sum(x['total'] for x in self.assignments)
 
         except Exception as e:
-            self.log_output(f"\n--- ERROR EN LA EJECUCIÓN ---")
-            self.log_output(f"Detalle: {str(e)}")
+            self.log_output(f"Error: {str(e)}")
+            total_cost = 0
         
         return {
             'steps': self.steps,
-            'log': self.text_log,
             'ficticia_fila': self.ficticia_fila_idx,
-            'ficticia_col': self.ficticia_col_idx
+            'ficticia_col': self.ficticia_col_idx,
+            'calculos': self.assignments,   # <--- LISTA DE MULTIPLICACIONES
+            'total_general': total_cost     # <--- SUMA FINAL
         }
 
 
-# --- Configuración de Flask (sin cambios) ---
 app = Flask(__name__)
+
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(app.root_path, 'static'),
+                               'favicon.png', mimetype='image/vnd.microsoft.icon')
 
 @app.route('/')
 def index():
