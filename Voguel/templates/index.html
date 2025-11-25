@@ -3,16 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Método de Vogel</title>
-    <link rel="icon" href="{{ url_for('static', filename='logo.png') }}">
-    <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
+    <title>Método de Vogel (Móvil)</title>
     <style>
         /* --- ESTILOS GENERALES --- */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: #f8f9fa;
             color: #333;
-            padding: 15px; /* Menos padding en general */
+            padding: 15px;
             margin: 0;
         }
         main {
@@ -23,23 +21,23 @@
             width: 100%;
             max-width: 1000px;
             margin: 0 auto;
-            box-sizing: border-box; /* Para que el padding no aumente el ancho */
+            box-sizing: border-box;
         }
         h1, h2, h3 {
             color: #2c3e50;
             border-bottom: 2px solid #f0f0f0;
             padding-bottom: 10px;
             margin-top: 20px;
-            word-wrap: break-word; /* Evita que textos largos rompan */
+            word-wrap: break-word;
         }
         h1 { font-size: 1.5rem; margin-top: 0; }
 
-        /* --- CONTROLES (ADAPTABLES) --- */
+        /* --- CONTROLES --- */
         .control-group {
             display: flex;
             gap: 10px;
             align-items: center;
-            flex-wrap: wrap; /* Permite que los elementos bajen si no caben */
+            flex-wrap: wrap;
             margin-bottom: 20px;
             background: #f1f3f5;
             padding: 15px;
@@ -61,6 +59,16 @@
             text-align: center;
             font-size: 1rem;
             outline: none;
+            /* Estos estilos ayudan a quitar las flechas spinner en algunos navegadores */
+            appearance: textfield; 
+            /* 2. Soporte específico para Firefox (necesario aunque de advertencia) */
+            -moz-appearance: textfield;
+        }
+        /* Quitar flechas spinner en Chrome/Safari */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
         }
 
         button {
@@ -72,20 +80,19 @@
             font-weight: 600;
             border-radius: 20px;
             cursor: pointer;
-            white-space: nowrap; /* Evita que el texto del botón se parta */
-            flex-grow: 1; /* En móvil, los botones ocupan el ancho disponible */
+            white-space: nowrap;
+            flex-grow: 1;
             max-width: 200px;
         }
         button:hover { background-color: #2980b9; }
         button:disabled { background-color: #bdc3c7; }
         button#resolver-btn { background-color: #2ecc71; }
 
-        /* --- 1. MATRIZ DE INPUTS (SCROLLABLE) --- */
-        /* Contenedor para permitir scroll horizontal en la grid de inputs */
+        /* --- MATRIZ (SCROLLABLE) --- */
         .grid-scroll-wrapper {
             width: 100%;
-            overflow-x: auto; /* Scroll si se desborda */
-            -webkit-overflow-scrolling: touch; /* Scroll suave en iOS */
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
             border: 1px solid #eee;
             border-radius: 10px;
             padding: 10px;
@@ -96,7 +103,6 @@
         #matriz-grid {
             display: grid;
             gap: 8px;
-            /* El ancho se define por el contenido, permitiendo scroll */
             min-width: min-content; 
         }
         
@@ -114,12 +120,11 @@
         .grid-header { background-color: #e8f6f3; color: #16a085; }
         .grid-label { background-color: #fdf2e9; color: #d35400; }
 
-        /* Inputs dentro de la grid */
         #matriz-grid input {
-            width: 60px; /* Ancho fijo para que no se aplasten */
+            width: 60px;
         }
 
-        /* --- 2. TABLAS DE RESULTADOS (SCROLLABLE) --- */
+        /* --- RESULTADOS --- */
         .step-container {
             margin-bottom: 40px;
             background: #fff;
@@ -127,7 +132,6 @@
             padding-bottom: 20px;
         }
 
-        /* Wrapper para scroll horizontal en tablas de resultados */
         .table-responsive {
             width: 100%;
             overflow-x: auto;
@@ -138,16 +142,15 @@
         .step-table {
             border-collapse: collapse;
             width: 100%;
-            min-width: 400px; /* Fuerza scroll si la pantalla es menor a 400px */
+            min-width: 400px;
             font-size: 0.9rem;
         }
 
-        /* LÍNEAS Y CELDAS (Estética anterior mantenida) */
         .step-table th, .step-table td {
             border: 1px solid #d1d1d1;
             padding: 8px;
             text-align: center;
-            white-space: nowrap; /* Evita que los números se rompan en dos líneas */
+            white-space: nowrap;
         }
 
         .step-table th {
@@ -157,7 +160,6 @@
             border-bottom: 2px solid #ccc;
         }
 
-        /* Píldoras redondeadas */
         .cell-content {
             display: inline-block;
             padding: 4px 8px;
@@ -167,7 +169,6 @@
 
         .penalty-val { font-style: italic; color: #7f8c8d; font-size: 0.85rem; }
 
-        /* Colores */
         .chosen-penalty .cell-content {
             background-color: #ffe0b2; color: #e65100; font-weight: bold;
             box-shadow: 0 2px 4px rgba(230, 81, 0, 0.2);
@@ -188,19 +189,12 @@
             white-space: pre-wrap; word-break: break-all;
         }
 
-        /* --- MEDIA QUERIES PARA TELÉFONOS --- */
         @media (max-width: 600px) {
             body { padding: 10px; }
             main { padding: 15px; }
-            
-            /* Inputs de configuración más grandes para dedos */
             .control-item input { width: 60px; padding: 10px; }
-            
-            /* Botones apilados y anchos */
             .control-group { flex-direction: column; align-items: stretch; }
             button { width: 100%; max-width: none; margin-bottom: 5px; }
-            
-            /* Títulos más pequeños */
             h1 { font-size: 1.3rem; text-align: center; }
             h4 { font-size: 1rem; }
         }
@@ -214,11 +208,11 @@
             <div class="control-group">
                 <div class="control-item">
                     <label>Filas:</label>
-                    <input type="number" id="filas-input" value="3" min="2" max="10">
+                    <input type="number" id="filas-input" value="3" min="2" max="10" inputmode="numeric" pattern="[0-9]*">
                 </div>
                 <div class="control-item">
                     <label>Cols:</label>
-                    <input type="number" id="columnas-input" value="4" min="2" max="10">
+                    <input type="number" id="columnas-input" value="4" min="2" max="10" inputmode="numeric" pattern="[0-9]*">
                 </div>
                 <button id="crear-tabla-btn">Generar Tabla</button>
             </div>
@@ -247,11 +241,9 @@
     </main>
 
     <script>
-        // --- Variables ---
         let filas = 0, cols = 0;
         let costEntries = [], ofertaEntries = [], demandaEntries = [];
 
-        // --- DOM Elements ---
         const filasInput = document.getElementById('filas-input');
         const colsInput = document.getElementById('columnas-input');
         const crearTablaBtn = document.getElementById('crear-tabla-btn');
@@ -263,15 +255,26 @@
         const stepContainer = document.getElementById('resultados-graficos');
         const outputLog = document.getElementById('output-log');
 
-        // --- Listeners ---
         crearTablaBtn.addEventListener('click', crearTabla);
         llenarAutoBtn.addEventListener('click', llenarAuto);
         resolverBtn.addEventListener('click', resolverVogel);
+
+        // FUNCIÓN AUXILIAR PARA CREAR INPUTS NUMÉRICOS DE MÓVIL
+        function createMobileInput() {
+            const inp = document.createElement('input');
+            inp.type = 'number'; 
+            inp.min = '0';
+            // ESTO ACTIVA EL TECLADO NUMÉRICO EN MÓVILES
+            inp.setAttribute('inputmode', 'numeric');
+            inp.setAttribute('pattern', '[0-9]*');
+            return inp;
+        }
 
         function crearTabla() {
             try {
                 filas = parseInt(filasInput.value);
                 cols = parseInt(colsInput.value);
+                // Validación 2 a 10
                 if (isNaN(filas) || isNaN(cols) || filas < 2 || filas > 10 || cols < 2 || cols > 10) throw new Error();
             } catch {
                 alert("Ingrese números entre 2 y 10."); return;
@@ -280,7 +283,6 @@
             matrizGrid.innerHTML = '';
             costEntries = []; ofertaEntries = []; demandaEntries = [];
             
-            // Grid Layout Dinámico
             matrizGrid.style.gridTemplateColumns = `auto repeat(${cols}, auto) auto`;
 
             // Encabezados
@@ -293,13 +295,11 @@
                 costEntries.push([]);
                 matrizGrid.appendChild(createDiv('grid-label', `F${i+1}`));
                 for (let j = 0; j < cols; j++) {
-                    const inp = document.createElement('input');
-                    inp.type = 'number'; inp.min = '0';
+                    const inp = createMobileInput(); // USAMOS LA NUEVA FUNCIÓN
                     matrizGrid.appendChild(inp);
                     costEntries[i].push(inp);
                 }
-                const ofInp = document.createElement('input');
-                ofInp.type = 'number'; ofInp.min = '0';
+                const ofInp = createMobileInput(); // USAMOS LA NUEVA FUNCIÓN
                 matrizGrid.appendChild(ofInp);
                 ofertaEntries.push(ofInp);
             }
@@ -307,8 +307,7 @@
             // Demanda
             matrizGrid.appendChild(createDiv('grid-label', 'Dem.'));
             for (let j = 0; j < cols; j++) {
-                const demInp = document.createElement('input');
-                demInp.type = 'number'; demInp.min = '0';
+                const demInp = createMobileInput(); // USAMOS LA NUEVA FUNCIÓN
                 matrizGrid.appendChild(demInp);
                 demandaEntries.push(demInp);
             }
@@ -367,7 +366,6 @@
             div.className = 'step-container';
             div.innerHTML = `<h4>Paso ${step.step}: Asignar <b>${step.assigned_amount}</b> a (${filaAsig+1}, ${colAsig+1})</h4>`;
 
-            // WRAPPER RESPONSIVE PARA LA TABLA
             const tableWrapper = document.createElement('div');
             tableWrapper.className = 'table-responsive';
 
